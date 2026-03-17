@@ -3,7 +3,7 @@ Prerequis avoir node et docker installer sur son post
 
 il faut cloner le projet
 
-'git clone git@github.com:fnestan/gsb-node-api.git'
+'git clone https://github.com/samir7500/gsb-node-api-samir.git'
 
 Une fois le projet cloner il faut installer les dependences
 
