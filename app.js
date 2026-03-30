@@ -1,6 +1,28 @@
 // app.js
 const express = require('express');
 const app = express();
+
+// Middleware CORS - Autorise les requêtes depuis Angular
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Autoriser plusieurs origines
+  if (origin === 'http://localhost:4200' || origin === 'http://localhost:3000') {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
+  
+  // Répondre aux requêtes OPTIONS
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.use(express.json());
 
 // Routes

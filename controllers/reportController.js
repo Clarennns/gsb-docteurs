@@ -1,145 +1,443 @@
-const jwtService = require('../services/jwtService');
-const { sequelize } = require('../models');
-const { Op } = require('sequelize');
-const Rapport = require('../models/rapport')(sequelize);
-const Offrir = require('../models/offrir')(sequelize);
-const Visiteur = require('../models/visiteur')(sequelize);
-const Medecin = require('../models/medecin')(sequelize);
-const Medicament = require('../models/medicament')(sequelize);
+const jwtService = require("../services/jwtService");
+const {
+  sequelize,
+  Sequelize,
+  Rapport,
+  Offrir,
+  Visiteur,
+  Medecin,
+  Medicament,
+} = require("../models");
+
+const getVisiteurFromToken = async (req) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+
+  const token = authHeader.replace("Bearer ", "");
+  const tokenIsValid = jwtService.validateToken(token);
+  const tokenIsBlacklisted = jwtService.isBlacklisted(token);
+  const claims = jwtService.getClaims(token);
+  const visiteurId = claims?.id;
+
+  if (!tokenIsValid || tokenIsBlacklisted || !visiteurId) {
+    return null;
+  }
+
+  const visiteur = await Visiteur.findByPk(visiteurId);
+  return visiteur || null;
+};
+
+const normalizeMedicinesInput = (payload) => {
+  if (Array.isArray(payload?.medicines)) {
+    return payload.medicines
+      .map((item) => ({
+        medicineId: String(item?.medicineId || "").trim(),
+        quantity: Number(item?.quantity),
+      }))
+      .filter(
+        (item) =>
+          item.medicineId &&
+          Number.isInteger(item.quantity) &&
+          item.quantity > 0,
+      );
+  }
+
+  if (
+    payload?.medicineId &&
+    Number.isInteger(Number(payload?.quantity)) &&
+    Number(payload.quantity) > 0
+  ) {
+    return [
+      {
+        medicineId: String(payload.medicineId).trim(),
+        quantity: Number(payload.quantity),
+      },
+    ];
+  }
+
+  return [];
+};
+
+const attachMedicines = async (reportId, medicines, transaction) => {
+  if (!medicines.length) {
+    return;
+  }
+
+  const medicineIds = [...new Set(medicines.map((m) => m.medicineId))];
+  const existing = await Medicament.findAll({
+    where: { id: medicineIds },
+    attributes: ["id"],
+    transaction,
+  });
+
+  if (existing.length !== medicineIds.length) {
+    throw new Error("MEDICINE_NOT_FOUND");
+  }
+
+  await Offrir.destroy({ where: { idRapport: reportId }, transaction });
+  await Offrir.bulkCreate(
+    medicines.map((m) => ({
+      idRapport: reportId,
+      idMedicament: m.medicineId,
+      quantite: m.quantity,
+    })),
+    { transaction },
+  );
+};
 
 const getReports = async (req, res) => {
-    const page = req.query.page || 1;
-    const element = req.query.element || 10;
-    const offset = (parseInt(page) - 1) * parseInt(element);
+  const page = parseInt(req.query.page || "1", 10);
+  const element = parseInt(req.query.element || "10", 10);
 
-    try {
-        const { count, rows } = await Rapport.findAndCountAll({
-            order: [['date', 'DESC']],
-            limit: parseInt(element),
-            offset
-        });
+  if (
+    !Number.isInteger(page) ||
+    page < 1 ||
+    !Number.isInteger(element) ||
+    element < 1
+  ) {
+    return res
+      .status(400)
+      .json({ error: "page et element doivent etre des entiers positifs" });
+  }
 
-        const response = rows.map(report => ({
-            id: report.id,
-            date: report.date,  // Y-m-d auto
-            motive: report.motif,
-            'balance sheet': report.bilan
-        }));
+  const offset = (page - 1) * element;
 
-        response.currentPage = page;
-        response.totalPages = Math.ceil(count / element);
+  try {
+    const { count, rows } = await Rapport.findAndCountAll({
+      order: [["date", "DESC"]],
+      limit: element,
+      offset,
+      include: [
+        { model: Visiteur, attributes: ["id", "nom", "prenom"] },
+        { model: Medecin, attributes: ["id", "nom", "prenom"] },
+      ],
+    });
 
-        res.json(response);
-    } catch (error) {
-        res.status(500).json({ error: error });
-    }
+    const response = rows.map((report) => ({
+      id: report.id,
+      date: report.date,
+      motive: report.motif,
+      balanceSheet: report.bilan,
+      visitor: report.Visiteur
+        ? {
+            id: report.Visiteur.id,
+            lastname: report.Visiteur.nom,
+            firstname: report.Visiteur.prenom,
+          }
+        : null,
+      doctor: report.Medecin
+        ? {
+            id: report.Medecin.id,
+            lastname: report.Medecin.nom,
+            firstname: report.Medecin.prenom,
+          }
+        : null,
+    }));
+
+    res.json({
+      reports: response,
+      currentPage: page,
+      totalPages: Math.ceil(count / element),
+    });
+  } catch (error) {
+    console.error("getReports:", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
 };
+
 const getReportById = async (req, res) => {
-    const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
 
-    try {
-        // Rapport + visiteur + médecin en 1 query
-        const [report] = await sequelize.query(`
-      SELECT r.id, r.date, r.motif, r.bilan, 
-             v.id as v_id, v.nom as v_nom, v.prenom as v_prenom,
-             m.id as m_id, m.nom as m_nom, m.prenom as m_prenom
-      FROM rapport r
-      LEFT JOIN visiteur v ON r.idVisiteur = v.id
-      LEFT JOIN medecin m ON r.idMedecin = m.id
-      WHERE r.id = ?
-    `, {
-            replacements: [id],
-            type: sequelize.QueryTypes.SELECT
-        });
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({ error: "Identifiant de rapport invalide" });
+  }
 
-        if (!report) {
-            return res.status(404).json({ error: 'Rapport non trouvé' });
-        }
+  try {
+    const report = await Rapport.findByPk(id, {
+      include: [
+        { model: Visiteur, attributes: ["id", "nom", "prenom"] },
+        { model: Medecin, attributes: ["id", "nom", "prenom"] },
+      ],
+    });
 
-        const response = {
-            id: report.id,
-            date: report.date,
-            motive: report.motif,
-            'balance sheet': report.bilan,
-            visitor: {
-                id: report.v_id,
-                lastname: report.v_nom,
-                firstname: report.v_prenom
-            },
-            doctor: {
-                id: report.m_id || '',
-                lastname: report.m_nom || '',
-                firstname: report.m_prenom || ''
-            }
-        };
-
-        res.json(response);
-    } catch (error) {
-        console.error('getReportById error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+    if (!report) {
+      return res.status(404).json({ error: "Rapport non trouvé" });
     }
+
+    const medicines = await sequelize.query(
+      `SELECT o.idMedicament as id,
+                    o.quantite as quantity,
+                    m.nomCommercial as businessName
+             FROM offrir o
+             INNER JOIN medicament m ON m.id = o.idMedicament
+             WHERE o.idRapport = ?
+             ORDER BY m.nomCommercial ASC`,
+      {
+        replacements: [id],
+        type: Sequelize.QueryTypes.SELECT,
+      },
+    );
+
+    const response = {
+      id: report.id,
+      date: report.date,
+      motive: report.motif,
+      balanceSheet: report.bilan,
+      visitor: report.Visiteur
+        ? {
+            id: report.Visiteur.id,
+            lastname: report.Visiteur.nom,
+            firstname: report.Visiteur.prenom,
+          }
+        : null,
+      doctor: report.Medecin
+        ? {
+            id: report.Medecin.id,
+            lastname: report.Medecin.nom,
+            firstname: report.Medecin.prenom,
+          }
+        : null,
+      medicines,
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error("getReportById error:", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
 };
 
 const createReport = async (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Token manquant ou incorrect' });
+  const visiteur = await getVisiteurFromToken(req);
+  if (!visiteur) {
+    return res
+      .status(401)
+      .json({ error: "Token manquant ou incorrect ou visiteur inexistant" });
+  }
+
+  const { balanceSheet, motive, doctorId, date } = req.body;
+  const medicines = normalizeMedicinesInput(req.body);
+  const parsedDoctorId = Number(doctorId);
+
+  if (
+    !balanceSheet ||
+    !motive ||
+    !parsedDoctorId ||
+    !date ||
+    medicines.length === 0
+  ) {
+    return res.status(400).json({
+      error:
+        "balanceSheet, motive, doctorId, date et au moins un medicament sont requis",
+    });
+  }
+
+  try {
+    const medecin = await Medecin.findByPk(parsedDoctorId);
+    if (!medecin) {
+      return res.status(400).json({ error: "Ce medecin n existe pas" });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const tokenIsValid = jwtService.validateToken(token);
-    const tokenIsBlacklisted = jwtService.isBlacklisted(token);
-    const claims = jwtService.getClaims(token);
-    const visiteurId = claims?.id;
-
-    const visiteur = await Visiteur.findByPk(visiteurId);
-    if (!visiteur || !tokenIsValid || tokenIsBlacklisted) {
-        return res.status(401).json({ error: 'Token manquant ou incorrect ou visiteur inexistant' });
-    }
-
-    const { balanceSheet, motive, doctorId, date, medicineId, quantity } = req.body;
-
+    const transaction = await sequelize.transaction();
     try {
-        const medicament = await Medicament.findByPk(medicineId);
-        if (!medicament) {
-            return res.status(400).json({ data: "Ce médicament n'existe pas" });
-        }
+      const report = await Rapport.create(
+        {
+          date,
+          motif: motive,
+          bilan: balanceSheet,
+          idVisiteur: visiteur.id,
+          idMedecin: medecin.id,
+        },
+        { transaction },
+      );
 
-        const medecin = doctorId ? await Medecin.findByPk(doctorId) : null;
+      await attachMedicines(report.id, medicines, transaction);
+      await transaction.commit();
 
-        // INSERT rapport
-        const [reportId] = await sequelize.query(
-            'INSERT INTO rapport (date, motif, bilan, idVisiteur, idMedecin) VALUES (:date, :motif, :bilan, :idVisiteur, :idMedecin)',
-            {
-                replacements: {
-                    date: date,
-                    motif: motive,
-                    bilan: balanceSheet,
-                    idVisiteur: visiteurId,
-                    idMedecin: medecin?.id || null
-                },
-                type: sequelize.QueryTypes.INSERT
-            }
-        );
-
-        // INSERT offrir
-        await sequelize.query(
-            'INSERT INTO offrir (idRapport, idMedicament, quantite) VALUES (:idRapport, :idMedicament, :quantite) ON DUPLICATE KEY UPDATE quantite = VALUES(quantite)',
-            {
-                replacements: {
-                    idRapport: reportId,
-                    idMedicament: medicineId,
-                    quantite: quantity
-                },
-                type: sequelize.QueryTypes.INSERT
-            }
-        );
-
-        res.status(201).json({ data: 'Le rapport a été créé' });
-    } catch (error) {
-        console.error('createReport:', error.message);
-        res.status(500).json({ error: 'Erreur création' });
+      res.status(201).json({
+        data: {
+          id: report.id,
+        },
+        message: "Le rapport a ete cree",
+      });
+    } catch (e) {
+      await transaction.rollback();
+      if (e.message === "MEDICINE_NOT_FOUND") {
+        return res
+          .status(400)
+          .json({ error: "Un ou plusieurs medicaments sont invalides" });
+      }
+      throw e;
     }
+  } catch (error) {
+    console.error("createReport:", error.message);
+    res.status(500).json({ error: "Erreur creation" });
+  }
 };
 
-module.exports = { getReports, getReportById, createReport };
+const updateReport = async (req, res) => {
+  const visiteur = await getVisiteurFromToken(req);
+  if (!visiteur) {
+    return res
+      .status(401)
+      .json({ error: "Token manquant ou incorrect ou visiteur inexistant" });
+  }
+
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({ error: "Identifiant de rapport invalide" });
+  }
+
+  const { balanceSheet, motive, doctorId, date } = req.body;
+  const medicines = normalizeMedicinesInput(req.body);
+  const parsedDoctorId = Number(doctorId);
+
+  if (!balanceSheet || !motive || !parsedDoctorId || !date) {
+    return res.status(400).json({
+      error:
+        "balanceSheet, motive, doctorId et date sont requis pour la mise a jour",
+    });
+  }
+
+  try {
+    const report = await Rapport.findByPk(id);
+    if (!report) {
+      return res.status(404).json({ error: "Rapport non trouve" });
+    }
+
+    if (report.idVisiteur !== visiteur.id) {
+      return res
+        .status(403)
+        .json({ error: "Modification non autorisee pour ce rapport" });
+    }
+
+    const medecin = await Medecin.findByPk(parsedDoctorId);
+    if (!medecin) {
+      return res.status(400).json({ error: "Ce medecin n existe pas" });
+    }
+
+    const transaction = await sequelize.transaction();
+    try {
+      await report.update(
+        {
+          date,
+          motif: motive,
+          bilan: balanceSheet,
+          idMedecin: medecin.id,
+        },
+        { transaction },
+      );
+
+      if (medicines.length > 0) {
+        await attachMedicines(report.id, medicines, transaction);
+      }
+
+      await transaction.commit();
+      return res.json({ message: "Rapport mis a jour" });
+    } catch (e) {
+      await transaction.rollback();
+      if (e.message === "MEDICINE_NOT_FOUND") {
+        return res
+          .status(400)
+          .json({ error: "Un ou plusieurs medicaments sont invalides" });
+      }
+      throw e;
+    }
+  } catch (error) {
+    console.error("updateReport:", error);
+    return res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+const deleteReport = async (req, res) => {
+  const visiteur = await getVisiteurFromToken(req);
+  if (!visiteur) {
+    return res
+      .status(401)
+      .json({ error: "Token manquant ou incorrect ou visiteur inexistant" });
+  }
+
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({ error: "Identifiant de rapport invalide" });
+  }
+
+  try {
+    const report = await Rapport.findByPk(id);
+    if (!report) {
+      return res.status(404).json({ error: "Rapport non trouve" });
+    }
+
+    if (report.idVisiteur !== visiteur.id) {
+      return res
+        .status(403)
+        .json({ error: "Suppression non autorisee pour ce rapport" });
+    }
+
+    const transaction = await sequelize.transaction();
+    try {
+      await Offrir.destroy({ where: { idRapport: id }, transaction });
+      await report.destroy({ transaction });
+      await transaction.commit();
+      return res.status(204).send();
+    } catch (e) {
+      await transaction.rollback();
+      throw e;
+    }
+  } catch (error) {
+    console.error("deleteReport:", error);
+    return res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+const getReportsByVisitor = async (req, res) => {
+  const { visiteurId } = req.params;
+
+  try {
+    const visitor = await Visiteur.findByPk(visiteurId);
+    if (!visitor) {
+      return res.status(404).json({ error: "Visiteur non trouve" });
+    }
+
+    const reports = await Rapport.findAll({
+      where: { idVisiteur: visiteurId },
+      order: [["date", "DESC"]],
+      include: [{ model: Medecin, attributes: ["id", "nom", "prenom"] }],
+    });
+
+    return res.json({
+      visitor: {
+        id: visitor.id,
+        lastname: visitor.nom,
+        firstname: visitor.prenom,
+      },
+      reports: reports.map((r) => ({
+        id: r.id,
+        date: r.date,
+        motive: r.motif,
+        balanceSheet: r.bilan,
+        doctor: r.Medecin
+          ? {
+              id: r.Medecin.id,
+              lastname: r.Medecin.nom,
+              firstname: r.Medecin.prenom,
+            }
+          : null,
+      })),
+    });
+  } catch (error) {
+    console.error("getReportsByVisitor:", error);
+    return res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+module.exports = {
+  getReports,
+  getReportById,
+  createReport,
+  updateReport,
+  deleteReport,
+  getReportsByVisitor,
+};
