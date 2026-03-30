@@ -1,88 +1,92 @@
-## 1 . Installation du projet
+GSB Docteurs — API Node.js
+API REST Node.js pour la gestion des médecins, médicaments et rapports de visite GSB, avec authentification JWT et base de données MySQL via Docker.
 
-Prerequis avoir node et docker installer sur son post
+Prérequis
+Avant de commencer, assurez-vous d'avoir installé sur votre machine :
 
-il faut cloner le projet
+Node.js
+Docker
 
-'git clone https://github.com/samir7500/gsb-node-api-samir.git'
 
-Une fois le projet cloner il faut installer les dependences
+1. Installation
+Cloner le projet
+bashgit clone https://github.com/samir7500/gsb-node-api-samir.git
+cd [repertoire-du-projet]
+Configurer l'environnement
+Renommez le fichier .env en .env.test :
+bashmv .env .env.test
+Installer les dépendances
+bashnpm install
+Lancer les conteneurs Docker
+bashdocker compose up -d
+Deux conteneurs seront créés :
+ConteneurRôlegsbDbBase de données MySQLgsbAdminerInterface web pour consulter la BDD
+Configurer Adminer
+Ouvrez votre navigateur à l'adresse http://localhost:8080 et renseignez les informations suivantes :
+ChampValeurDialectmysqlHôtegsbDbUtilisateuruser_gsbMot de passepassword_gsb
+Validez. La base de données gsb_frais devrait apparaître.
+Depuis Adminer, vous pouvez importer le fichier SQL présent dans le dossier database/.
 
-'cd [repertoire-du-projet]'
+2. Démarrage
+bashnpm start
+L'API est maintenant accessible sur http://localhost:3000.
 
-Renommez le fichier .env en .env.test
-
-'npm install'
-
-lancez la commande suivante
-
-'docker compose up -d'
-
-2 containners seront créer
-
-- gsbDb : un container mysql
-- gsbAdminer : un container adminer pour consulter le bdd via une interface
-
-sur un navigateur saisir l'url suivante:
-
-'localhost:8080'
-
-saisir les information suivantes
-
-dialect:mysql
-host:gsbDb
-username:user_gsb
-password:password_gsb
-
-et validez
-
-la bdd 'gsb_frais' devrait exister
-
-depuis cette interface vous pouvez importez la bdd gsb presente dans le dossier 'database'
-
-## 2. démarrage du projet
-
-Lancez la commande:
-'npm start'
-le projet est lancé et pouvez acceder au routes suivantes:
-
-- http://localhost:3000/connexion : POST
-  {
+3. Endpoints
+Authentification
+MéthodeRouteDescriptionPOST/connexionConnexion — retourne un token JWTGET/deconnexionDéconnexion
+POST /connexion
+json{
   "login": "admin",
   "password": "admin"
-  }
+}
+GET /deconnexion — header requis :
+Authorization: Bearer <token>
 
-- http://localhost:3000/deconnexion : GET
-  "headers: Authorization: Bearer [token]"
+Médecins
+MéthodeRouteDescriptionGET/medecinsListe des médecinsGET/api/medicins/:idDétail d'un médecin
+Paramètres de pagination et filtrage disponibles sur /medecins :
+ParamètreDescriptionpageNuméro de la pageelementNombre d'éléments par pagenameFiltrer par nom ou prénom du médecin
 
-- http://localhost:3000/medecins : GET
-- http://localhost:3000/api/medicins/:id : GET
-- http://localhost:3000/api/medicaments : GET
+Médicaments
+MéthodeRouteDescriptionGET/api/medicamentsListe des médicaments
 
-- http://localhost:3000/rapports : GET
-- http://localhost:3000/rapports/:id : GET
-- http://localhost:3000/rapports : POST
-  "headers: Authorization: Bearer [token]"
-  {
+Rapports de visite
+MéthodeRouteDescriptionGET/rapportsListe des rapportsGET/rapports/:idDétail d'un rapportPOST/rapportsCréer un rapport (authentifié)
+POST /rapports — header requis :
+Authorization: Bearer <token>
+Body :
+json{
   "balanceSheet": "Bilan ok",
   "motive": "Visite routine",
   "doctorId": 1,
   "date": "2026-03-14",
   "medicineId": "3MYC7",
   "quantity": 2
-  }
+}
+Paramètres de pagination disponibles sur /rapports :
+ParamètreDescriptionpageNuméro de la pageelementNombre d'éléments par page
 
-## information supplementaires
+4. Structure du projet
+gsb-docteurs/
+├── config/          # Configuration BDD et JWT
+├── controllers/     # Logique métier des routes
+├── database/        # Fichier SQL d'import
+├── models/          # Modèles Sequelize
+├── routes/          # Définition des routes
+├── services/        # Services utilitaires
+├── app.js           # Point d'entrée de l'application
+├── docker-compose.yml
+├── .env.test        # Variables d'environnement
+└── package.json
 
-Pour le listing des medecins on peut rajouter les parametres suivants dans la requete:
+5. Déploiement (Heroku)
+Une version en ligne est disponible sur Heroku. Pour la démarrer, contactez le développeur directement.
 
-- page: le nombre d'élément par page
-- element : le nombre d'elements de la page
-- name : par nom ou prenom du docteur
+Technologies utilisées
 
-Pour le listing des rapport on peut rajouter les parametres suivants dans la requete:
-
-- page: le nombre d'élément par page
-- element : le nombre d'elements de la page
-
-J'ai mis en place en heroku(version en ligne) si vous souhaiter que je le demmarre vous pouvez m'envoyer un sms
+Node.js — Runtime JavaScript
+Express — Framework web
+MySQL — Base de données relationnelle
+Docker — Conteneurisation (MySQL + Adminer)
+JWT — Authentification par token
+Heroku — Hébergement cloud
