@@ -1,7 +1,20 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes } = require("sequelize");
 module.exports = (sequelize) => {
-    return sequelize.define('Famille', {
-        id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-        libelle: DataTypes.STRING(100)
-    }, { tableName: 'famille', timestamps: false });
+  const Famille = sequelize.define(
+    "Famille",
+    {
+      id: { type: DataTypes.STRING(10), primaryKey: true },
+      libelle: DataTypes.STRING(100),
+    },
+    { tableName: "famille", timestamps: false },
+  );
+
+  Famille.associate = (models) => {
+    Famille.hasMany(models.Medicament, {
+      foreignKey: "idFamille",
+      sourceKey: "id",
+    });
+  };
+
+  return Famille;
 };
