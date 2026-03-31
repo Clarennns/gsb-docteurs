@@ -1,0 +1,132 @@
+<section class="doctors-page">
+  <header class="doctors-page__header">
+    <div>
+      <h1>Gestion des medecins</h1>
+    </div>
+
+    <nav class="doctors-page__nav">
+      <a routerLink="/reports">Rapports</a>
+      <button type="button" (click)="logout()">Deconnexion</button>
+    </nav>
+  </header>
+
+  <!-- Delete Confirmation Dialog -->
+  @if (showDeleteConfirm()) {
+    <div class="confirmation-overlay">
+      <div class="confirmation-dialog">
+        <h3 class="confirmation-title">Confirmation de suppression</h3>
+        <p class="confirmation-message">
+          Attention ce médecin a des rapports associés, êtes vous sûr de vouloir le supprimer ?
+        </p>
+        <p class="confirmation-doctor">{{ deleteConfirmDoctorName() }}</p>
+        <p class="confirmation-info">Les rapports seront également supprimés.</p>
+        <div class="confirmation-buttons">
+          <button type="button" class="button button--danger" (click)="confirmDelete(true)">
+            Confirmer
+          </button>
+          <button type="button" class="button button--ghost" (click)="confirmDelete(false)">
+            Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="doctors-layout">
+    <article class="doctor-form-card">
+      <h2>{{ editingDoctorId() ? 'Modifier un medecin' : 'Nouveau medecin' }}</h2>
+
+      <form class="doctor-form" (ngSubmit)="submit()" novalidate>
+        <label>
+          Nom
+          <input [value]="nom()" (input)="nom.set($any($event.target).value)" required />
+        </label>
+
+        <label>
+          Prenom
+          <input [value]="prenom()" (input)="prenom.set($any($event.target).value)" required />
+        </label>
+
+        <label>
+          Telephone
+          <input [value]="tel()" (input)="tel.set($any($event.target).value)" />
+        </label>
+
+        <label>
+          Adresse
+          <input [value]="adresse()" (input)="adresse.set($any($event.target).value)" />
+        </label>
+
+        <label>
+          Specialite
+          <input
+            [value]="specialitecomplementaire()"
+            (input)="specialitecomplementaire.set($any($event.target).value)"
+          />
+        </label>
+
+        <label>
+          Departement
+          <input [value]="departement()" (input)="departement.set($any($event.target).value)" />
+        </label>
+
+        @if (pageError()) {
+          <p class="doctor-form__alert doctor-form__alert--error">{{ pageError() }}</p>
+        }
+
+        @if (pageMessage()) {
+          <p class="doctor-form__alert doctor-form__alert--ok">{{ pageMessage() }}</p>
+        }
+
+        <div class="doctor-form__footer">
+          @if (editingDoctorId()) {
+            <button type="button" class="button button--ghost" (click)="cancelEdit()">
+              Annuler
+            </button>
+          }
+          <button class="button" [disabled]="isSubmitting()" type="submit">
+            {{ isSubmitting() ? 'Traitement...' : editingDoctorId() ? 'Mettre a jour' : 'Creer' }}
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <article class="doctors-list-card">
+      <h2>Medecins existants</h2>
+
+      <div class="doctors-search">
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Rechercher par nom, specialite, email, adresse..."
+          [value]="searchTerm()"
+          (input)="searchTerm.set($any($event.target).value)"
+        />
+      </div>
+
+      <div class="doctors-list">
+        @for (doctor of filteredDoctors(); track doctor.id) {
+          <div class="doctor-item">
+            <div>
+              <h3>{{ doctor.firstname }} {{ doctor.lastname }}</h3>
+              <p>{{ doctor.speciality }}</p>
+              @if (doctor.address) {
+                <small>{{ doctor.address }}</small>
+              }
+              @if (doctor.email) {
+                <small>{{ doctor.email }}</small>
+              }
+            </div>
+
+            <div class="doctor-item__actions">
+              <button type="button" (click)="editDoctor(doctor)">Modifier</button>
+              <button type="button" class="danger" (click)="deleteDoctor(doctor.id)">
+                Supprimer
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </article>
+  </div>
+</section>

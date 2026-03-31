@@ -1,0 +1,142 @@
+<section class="reports-page">
+  <header class="reports-page__header">
+    <div>
+      <h1>Gestion des rapports</h1>
+    </div>
+
+    <nav class="reports-page__actions">
+      <a routerLink="/doctors">Medecins</a>
+      <button type="button" (click)="logout()">Deconnexion</button>
+    </nav>
+  </header>
+
+  <div class="reports-layout">
+    <article class="report-form-card">
+      <h2>{{ editingReportId() ? 'Modifier un rapport' : 'Nouveau rapport' }}</h2>
+
+      <form class="report-form" (ngSubmit)="submit()">
+        <label>
+          Date
+          <input
+            type="date"
+            [value]="date()"
+            (input)="date.set($any($event.target).value)"
+            required
+          />
+        </label>
+
+        <label>
+          Motif
+          <input
+            [value]="motive()"
+            (input)="motive.set($any($event.target).value)"
+            maxlength="100"
+            required
+          />
+        </label>
+
+        <label>
+          Bilan
+          <textarea
+            [value]="balanceSheet()"
+            (input)="balanceSheet.set($any($event.target).value)"
+            maxlength="100"
+            rows="3"
+            required
+          ></textarea>
+        </label>
+
+        <label>
+          Medecin
+          <select
+            [value]="doctorId() ?? ''"
+            (change)="setDoctorIdFromValue($any($event.target).value)"
+            required
+          >
+            <option value="" disabled>Choisir un medecin</option>
+            @for (doctor of doctors(); track doctor.id) {
+              <option [value]="doctor.id">{{ doctor.nom }} {{ doctor.prenom }}</option>
+            }
+          </select>
+        </label>
+
+        <div class="report-form__medicines">
+          <div class="report-form__medicines-head">
+            <h3>Medicaments (N-N)</h3>
+            <button type="button" (click)="addMedicineRow()">Ajouter</button>
+          </div>
+
+          @for (row of medicinesForm(); track $index) {
+            <div class="report-form__medicine-row">
+              <select
+                [value]="row.medicineId"
+                (change)="updateMedicineRow($index, 'medicineId', $any($event.target).value)"
+                required
+              >
+                <option value="" disabled>Medicament</option>
+                @for (medicine of medicines(); track medicine.id) {
+                  <option [value]="medicine.id">{{ medicine.businessName }}</option>
+                }
+              </select>
+
+              <input
+                type="number"
+                min="1"
+                [value]="row.quantity"
+                (input)="updateMedicineRow($index, 'quantity', $any($event.target).value)"
+                required
+              />
+
+              <button type="button" (click)="removeMedicineRow($index)">Retirer</button>
+            </div>
+          }
+        </div>
+
+        @if (pageError()) {
+          <p class="report-form__alert report-form__alert--error">{{ pageError() }}</p>
+        }
+
+        @if (pageMessage()) {
+          <p class="report-form__alert report-form__alert--ok">{{ pageMessage() }}</p>
+        }
+
+        <div class="report-form__footer">
+          @if (editingReportId()) {
+            <button type="button" class="button button--ghost" (click)="cancelEdit()">
+              Annuler
+            </button>
+          }
+          <button class="button" [disabled]="isSubmitting()" type="submit">
+            {{ isSubmitting() ? 'Traitement...' : editingReportId() ? 'Mettre a jour' : 'Creer' }}
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <article class="reports-list-card">
+      <h2>Rapports existants</h2>
+
+      <div class="reports-list">
+        @for (report of reports(); track report.id) {
+          <div class="report-item">
+            <div>
+              <p class="report-item__date">{{ report.date }}</p>
+              <h3>{{ report.motive }}</h3>
+              <p>{{ report.balanceSheet }}</p>
+              @if (report.doctor) {
+                <small>Medecin: {{ report.doctor.firstname }} {{ report.doctor.lastname }}</small>
+              }
+            </div>
+
+            <div class="report-item__actions">
+              <button type="button" (click)="editReport(report)">Modifier</button>
+              <button type="button" class="danger" (click)="deleteReport(report.id)">
+                Supprimer
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </article>
+  </div>
+</section>

@@ -1,0 +1,244 @@
+.reports-page {
+  min-height: 100vh;
+  padding: 24px;
+  background: linear-gradient(175deg, #fff4db 0%, #f8fafc 40%, #e0f2fe 100%);
+}
+
+.reports-page__header {
+  max-width: 1240px;
+  margin: 0 auto 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.reports-page__eyebrow {
+  margin: 0;
+  color: #0f766e;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.reports-page h1 {
+  margin: 4px 0;
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+  color: #0f172a;
+}
+
+.reports-page__subtitle {
+  margin: 0;
+  color: #475569;
+}
+
+.reports-page__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reports-page__actions a,
+.reports-page__actions button {
+  border: none;
+  text-decoration: none;
+  color: #fff;
+  background: #0f172a;
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reports-layout {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: 14px;
+}
+
+.report-form-card,
+.reports-list-card {
+  background: #ffffffee;
+  border: 1px solid #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 12px 40px #0f172a1c;
+  padding: 18px;
+}
+
+.report-form-card h2,
+.reports-list-card h2 {
+  margin-top: 4px;
+  margin-bottom: 14px;
+  color: #0f172a;
+}
+
+.report-form {
+  display: grid;
+  gap: 10px;
+}
+
+.report-form label {
+  display: grid;
+  gap: 6px;
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.report-form input,
+.report-form textarea,
+.report-form select {
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px;
+  font-size: 0.95rem;
+  background: #fff;
+}
+
+.report-form__medicines {
+  border: 1px dashed #94a3b8;
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.report-form__medicines-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.report-form__medicines-head h3 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.report-form__medicines-head button {
+  border: none;
+  background: #facc15;
+  border-radius: 10px;
+  padding: 7px 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.report-form__medicine-row {
+  display: grid;
+  grid-template-columns: 1fr 88px auto;
+  gap: 8px;
+}
+
+.report-form__medicine-row button {
+  border: none;
+  background: #e2e8f0;
+  border-radius: 10px;
+  padding: 0 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.report-form__alert {
+  margin: 0;
+  border-radius: 10px;
+  padding: 9px;
+  font-size: 0.9rem;
+}
+
+.report-form__alert--error {
+  background: #ffe6e6;
+  color: #9f1239;
+}
+
+.report-form__alert--ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.report-form__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.button {
+  border: none;
+  border-radius: 11px;
+  padding: 10px 14px;
+  background: linear-gradient(110deg, #0ea5e9, #14b8a6);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.65;
+}
+
+.button--ghost {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.reports-list {
+  display: grid;
+  gap: 10px;
+}
+
+.report-item {
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.report-item__date {
+  margin: 0;
+  color: #0369a1;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.report-item h3 {
+  margin: 3px 0;
+  color: #0f172a;
+}
+
+.report-item p {
+  margin: 0;
+  color: #475569;
+}
+
+.report-item small {
+  color: #0f766e;
+}
+
+.report-item__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.report-item__actions button {
+  border: none;
+  border-radius: 10px;
+  padding: 7px 11px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #e2e8f0;
+}
+
+.report-item__actions .danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+@media (max-width: 980px) {
+  .reports-layout {
+    grid-template-columns: 1fr;
+  }
+}

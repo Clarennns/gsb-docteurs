@@ -1,0 +1,74 @@
+<div class="login">
+  <div class="login__card">
+    <h1 class="login__title">Connexion GSB</h1>
+    <p class="login__subtitle">Accès aux rapports de visite</p>
+
+    <!-- Formulaire de connexion -->
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm" class="login__form">
+      <!-- Champ Nom d'utilisateur -->
+      <div class="login__form-group">
+        <label for="username" class="login__label">Nom d'utilisateur</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          class="login__input"
+          [value]="username()"
+          (input)="updateUsername($any($event.target).value)"
+          required
+          placeholder="Entrez votre identifiant"
+          [attr.aria-invalid]="authService.errorMessage() ? 'true' : null"
+        />
+      </div>
+
+      <!-- Champ Mot de passe -->
+      <div class="login__form-group">
+        <label for="password" class="login__label">Mot de passe</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          class="login__input"
+          [value]="password()"
+          (input)="updatePassword($any($event.target).value)"
+          required
+          placeholder="Entrez votre mot de passe"
+          [attr.aria-invalid]="authService.errorMessage() ? 'true' : null"
+        />
+      </div>
+
+      <!-- Message d'erreur -->
+      @if (authService.errorMessage()) {
+        <div class="login__alert login__alert--error" role="alert" aria-live="polite">
+          {{ authService.errorMessage() }}
+        </div>
+      }
+
+      <!-- Bouton de soumission -->
+      <button
+        type="submit"
+        class="login__button"
+        [class.login__button--loading]="isSubmitting()"
+        [attr.aria-disabled]="isSubmitting() || !username() || !password() ? 'true' : null"
+      >
+        @if (isSubmitting()) {
+          <span class="login__button-text">Connexion en cours...</span>
+        } @else {
+          <span class="login__button-text">Se connecter</span>
+        }
+      </button>
+    </form>
+
+    <!-- Informations de test -->
+    <div class="login__test-info">
+      <p class="login__test-info-title"><strong>Compte de test :</strong></p>
+      <p class="login__test-info-item">Identifiant : <code class="login__code">admin</code></p>
+      <p class="login__test-info-item">Mot de passe : <code class="login__code">admin</code></p>
+    </div>
+
+    <p class="login__register-link-wrap">
+      Nouveau visiteur ?
+      <a routerLink="/register" class="login__register-link">Creer un compte</a>
+    </p>
+  </div>
+</div>

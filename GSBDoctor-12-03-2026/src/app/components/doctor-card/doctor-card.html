@@ -1,0 +1,16 @@
+<article class="doctor-card">
+  <header class="doctor-card__header">
+    <h3 class="doctor-card__name">
+      {{ doctor().firstname }} {{ doctor().lastname }}
+    </h3>
+    <span class="doctor-card__specialty-tag">
+      {{ doctor().speciality }}
+    </span>
+  </header>
+  <div class="doctor-card__body">
+    <p class="doctor-card__email">
+      <a [href]="'mailto:' + doctor().email">{{ doctor().email }}</a>
+    </p>
+    <p class="doctor-card__address">{{ doctor().address }}</p>
+  </div>
+</article>

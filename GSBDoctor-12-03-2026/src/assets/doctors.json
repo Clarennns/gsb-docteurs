@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "prenom": "Aline",
+    "nom": "Dupont",
+    "email": "aline.dupont@gsb.test",
+    "specialite": "Cardiologie",
+    "adresse": "12 rue de la Paix, 75002 Paris"
+  },
+  {
+    "id": 2,
+    "prenom": "Karim",
+    "nom": "Benali",
+    "email": "karim.benali@gsb.test",
+    "specialite": "Dermatologie",
+    "adresse": "4 avenue des Ternes, 75017 Paris"
+  },
+  {
+    "id": 3,
+    "prenom": "Lucie",
+    "nom": "Moreau",
+    "email": "lucie.moreau@gsb.test",
+    "specialite": "Pédiatrie",
+    "adresse": "28 rue Victor-Hugo, 69002 Lyon"
+  },
+  {
+    "id": 4,
+    "prenom": "Émile",
+    "nom": "Rossi",
+    "email": "emile.rossi@gsb.test",
+    "specialite": "Gynécologie",
+    "adresse": "5 boulevard Baille, 13006 Marseille"
+  },
+    {
+    "id": 5,
+    "prenom": "Émile",
+    "nom": "Rossi",
+    "email": "emile.rossi@gsb.test",
+    "specialite": "Gynécologie",
+    "adresse": "5 boulevard Baille, 13006 Marseille"
+  }
+]

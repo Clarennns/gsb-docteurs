@@ -1,0 +1,75 @@
+<section class="auth-shell">
+  <div class="auth-shell__bg-orb auth-shell__bg-orb--left"></div>
+  <div class="auth-shell__bg-orb auth-shell__bg-orb--right"></div>
+
+  <article class="register-card">
+    <h1 class="register-card__title">Inscription GSB</h1>
+    <p class="register-card__subtitle">Creez un compte avec un mot de passe robuste</p>
+
+    <form class="register-form" (ngSubmit)="onSubmit()">
+      <div class="register-form__grid">
+        <label class="register-form__field">
+          <span>Nom</span>
+          <input [value]="nom()" (input)="nom.set($any($event.target).value)" required />
+        </label>
+
+        <label class="register-form__field">
+          <span>Prenom</span>
+          <input [value]="prenom()" (input)="prenom.set($any($event.target).value)" required />
+        </label>
+      </div>
+
+      <label class="register-form__field">
+        <span>Identifiant</span>
+        <input [value]="login()" (input)="login.set($any($event.target).value)" required />
+      </label>
+
+      <label class="register-form__field">
+        <span>Mot de passe</span>
+        <input
+          type="password"
+          [value]="password()"
+          (input)="password.set($any($event.target).value)"
+          required
+        />
+      </label>
+
+      <p class="register-form__hint">
+        Minimum 8 caracteres avec majuscule, minuscule, chiffre et caractere special.
+      </p>
+
+      <div class="register-form__grid">
+        <label class="register-form__field">
+          <span>Code postal</span>
+          <input [value]="cp()" (input)="cp.set($any($event.target).value)" />
+        </label>
+
+        <label class="register-form__field">
+          <span>Ville</span>
+          <input [value]="ville()" (input)="ville.set($any($event.target).value)" />
+        </label>
+      </div>
+
+      <label class="register-form__field">
+        <span>Adresse</span>
+        <input [value]="adresse()" (input)="adresse.set($any($event.target).value)" />
+      </label>
+
+      @if (authService.errorMessage()) {
+        <p class="register-card__alert register-card__alert--error">
+          {{ authService.errorMessage() }}
+        </p>
+      }
+
+      @if (successMessage()) {
+        <p class="register-card__alert register-card__alert--success">{{ successMessage() }}</p>
+      }
+
+      <button type="submit" [disabled]="isSubmitting()" class="register-form__button">
+        {{ isSubmitting() ? 'Creation en cours...' : 'Creer mon compte' }}
+      </button>
+    </form>
+
+    <a routerLink="/login" class="register-card__back-link">Retour a la connexion</a>
+  </article>
+</section>
